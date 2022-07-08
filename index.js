@@ -83,7 +83,7 @@ app.get('/item/get', (req, res) => {
 
     if (instock == 'true') {
 
-        var query = "SELECT * FROM `items` WHERE active = 'true'";
+        var query = "SELECT * FROM `items` WHERE active = 'true' ORDER BY id DESC";
     }
 
     else {
@@ -94,7 +94,7 @@ app.get('/item/get', (req, res) => {
     con.query(query, (err, Results) => {
         if (err) res.send({ success: false });
 
-        console.log(Results.length)
+
         if (Results.length != 0) {
 
             let raw_Data = Results;
@@ -130,7 +130,7 @@ app.get('/item/update/', (req, res) => {
     con.query(query, (err, Results) => {
         if (err) res.send({ success: false });
 
-        console.log(Results.length)
+
         if (Results.length != 0) {
 
 
@@ -158,7 +158,7 @@ app.get('/item/getOne/:id', (req, res) => {
     con.query(query, (err, Results) => {
         if (err) res.send({ success: false });
 
-        console.log(Results.length)
+
         if (Results.length != 0) {
             console.log(Results)
             let raw_Data = Results[0];
@@ -231,7 +231,7 @@ app.get('/user/getAdmin', (req, res) => {
     con.query(query, (err, Results) => {
         if (err) res.send({ success: false });
 
-        console.log(Results.length)
+
         if (Results.length != 0) {
 
             let raw_Data = Results[0];
@@ -252,5 +252,199 @@ app.get('/user/getAdmin', (req, res) => {
 
 })
 
-app.listen(port, () => console.log(`Example app listening on port http://localhost:${port}`))
+
+app.get('/coupon/create', (req, res) => {
+
+    let code = req.query.code;
+    let use_limit = req.query.use_limit;
+    let discount = req.query.discount;
+    let active = req.query.active;
+
+    var query = "SELECT * FROM `coupon` WHERE code = '" + code + "'";
+
+    con.query(query, (err, Results) => {
+        if (err) res.send({ success: false });
+
+
+        if (Results.length == 0) {
+
+            var query = "INSERT INTO `coupon`(`code`, `use_limit`, `used` ,  `discount`, `active`) VALUES ('" + code.toUpperCase() + "' , '" + use_limit + "' , '0' , '" + discount + "' , '" + active + "')";
+            con.query(query, (err, Results) => {
+                console.log(query)
+                res.send({ success: true });
+            })
+
+        }
+
+
+
+        else {
+            res.send({ success: false });
+
+        }
+
+
+    })
+
+})
+
+
+app.get('/coupon/get', (req, res) => {
+
+    var query = "SELECT * FROM `coupon`";
+
+    con.query(query, (err, Results) => {
+        if (err) res.send({ success: false });
+
+
+        if (Results.length != 0) {
+
+            res.send({ success: true, data: Results });
+
+        }
+
+
+
+        else {
+            res.send({ success: false });
+
+        }
+
+
+    })
+
+})
+
+app.get('/coupon/getOne/:code', (req, res) => {
+
+    let code = req.params.code
+
+    var query = "SELECT * FROM `coupon` WHERE code = '" + code.toUpperCase() + "' AND active = 'true'";
+
+    con.query(query, (err, Results) => {
+        if (err) res.send({ success: false });
+
+
+        if (Results.length != 0) {
+
+            let used = Results[0].used + 1;
+            console.log(Results[0])
+            console.log(used)
+            if (Results[0].active == 'true' && used >= Results[0].use_limit) {
+                var query = "UPDATE `coupon` SET `used`='" + used + "' , `active`='false' WHERE code = '" + code + "'";
+            }
+
+            else {
+                var query = "UPDATE `coupon` SET `used`='" + used + "' WHERE code = '" + code + "'";
+            }
+
+            con.query(query)
+            console.log(query)
+
+            res.send({ success: true, data: Results[0] });
+
+        }
+
+
+
+        else {
+            res.send({ success: false });
+
+        }
+
+
+    })
+
+})
+
+app.get('/coupon/delete/:code', (req, res) => {
+
+    let code = req.params.code
+
+    var query = "DELETE FROM `coupon` WHERE code = '" + code.toUpperCase() + "'";
+
+    con.query(query, (err, Results) => {
+        if (err) res.send({ success: false });
+        res.send({ success: true, data: Results[0] });
+
+
+    })
+
+})
+
+app.get('/order/create', (req, res) => {
+
+    let name = req.query.name
+    let email = req.query.email
+    let phone = req.query.phone
+    let address = req.query.address
+    let quantity = req.query.quantity
+    let state = req.query.state
+    let city = req.query.city
+    let discount = req.query.discount
+    let product_id = req.query.product_id
+    let price = req.query.price
+
+
+    var query = "INSERT INTO `orders`(`name`, `email`, `address`, `state`, `city`, `phone`, `product_id`, `quantity`, `discount` , `price`) VALUES ('" + name + "' , '" + email + "' , '" + address + "' , '" + state + "' , '" + city + "' , '" + phone + "' , '" + product_id + "' , '" + quantity + "' , '" + discount + "' , '" + price + "')";
+
+    con.query(query, (err, Results) => {
+        if (err) res.send({ success: false });
+        res.send({ success: true });
+
+
+    })
+
+})
+
+app.get('/order/get', (req, res) => {
+
+
+    var filter = req.query.filter;
+
+    console.log("filter: " + filter);
+
+    if (filter == 'pending') {
+
+        var query = "SELECT * FROM `orders` WHERE status = 'pending' ORDER BY id Desc";
+    }
+
+    else if (filter == 'cancelled') {
+        var query = "SELECT * FROM `orders` WHERE status = 'cancelled' ORDER BY id Desc";
+
+    }
+
+    else if (filter == 'delevered') {
+
+        var query = "SELECT * FROM `orders` WHERE status = 'delevered' ORDER BY id Desc";
+    }
+
+    else if (filter == undefined) {
+        var query = "SELECT * FROM `orders` ORDER BY id Desc";
+    }
+
+    con.query(query, (err, Results) => {
+        if (err) res.send({ success: false });
+
+
+        if (Results.length != 0) {
+
+            res.send({ success: true, data: Results });
+
+        }
+
+
+
+        else {
+            res.send({ success: false });
+
+        }
+
+
+    })
+
+})
+
+
+app.listen(port, () => console.log(`TakeAwat app api is listining at this port listening on port http://localhost:${port}`))
 
