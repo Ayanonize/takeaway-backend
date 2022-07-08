@@ -103,8 +103,6 @@ app.get('/item/get', (req, res) => {
 
         }
 
-
-
         else {
             res.send({ success: false });
 
